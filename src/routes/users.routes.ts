@@ -22,7 +22,6 @@ usersRouter.get('/login', loginValidator, loginController)
 //     password: string,
 //     confirm_password: string
 //     date_of_birth: ISO8601
-
 // }
 usersRouter.post('/register', registerValidator, wrapAsync(registerController))
 

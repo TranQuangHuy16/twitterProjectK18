@@ -32,6 +32,8 @@ export const loginValidator = validate(
           })
           if (user === null) {
             throw new Error(USERS_MESSAGES.EMAIL_OR_PASSWORD_IS_INCORRECT)
+            // khi thrwo error thì nó sẽ không thông báo cho cliente mà sẽ lưu vào req và ta sẽ xử lí trong hàm validate
+            // không đc xử lí trong error handler tổng
           }
           req.user = user
           return true

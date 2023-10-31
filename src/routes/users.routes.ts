@@ -10,7 +10,8 @@ import {
   emailVerifyTokenController,
   loginController,
   logoutController,
-  registerController
+  registerController,
+  resendEmailVerifyController
 } from '~/controllers/users.controllers'
 import { register } from 'module'
 import { wrapAsync } from '~/utils/handlers'
@@ -58,6 +59,16 @@ method: POST
 body: {token: string}
 */
 usersRouter.post('/verify-email', emailVerifyTokenValidator, wrapAsync(emailVerifyTokenController))
+
+/*
+des: resend email verify token
+khi email thất lạc hoặc email_verify_token hết hạn thì người dùng có nhu cầu resend lại email_verify_token
+path: /users/resend-verify-email
+method: POST
+header: {Authorization: Bearer <access_token>} //đăng nhập mới được resend
+body: {}
+*/
+usersRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
 export default usersRouter
 
 // nếu là hàm async thì throw new Error sẽ lỗi nên ta phải dùng try catch để chụp lại err r next(err) | promise

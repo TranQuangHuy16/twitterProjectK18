@@ -219,7 +219,10 @@ export const accessTokenValidator = validate(
             // nếu xuống được đây thì tức là access_token có rồi
             // cần verify access_token và lấy payload ra lưu lại
             try {
-              const decoded_authorization = await verifyToken({ token: access_token })
+              const decoded_authorization = await verifyToken({
+                token: access_token,
+                secretOrPublicKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+              })
               ;(req as Request).decoded_authorization = decoded_authorization
             } catch (err) {
               throw new ErrorWithStatus({
@@ -249,7 +252,7 @@ export const refreshTokenValidator = validate(
             // value là refrest_token
             try {
               const [docoded_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value }),
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_SECRET_REFRESH_TOKEN as string }),
                 databaseService.refreshTokens.findOne({
                   token: value
                 })

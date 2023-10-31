@@ -21,7 +21,8 @@ class UsersService {
       },
       options: {
         expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN
-      }
+      },
+      privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
     })
   }
   // viết hàm nhận vào user_id để bỏ vào payload tạo refresh token
@@ -33,7 +34,8 @@ class UsersService {
       },
       options: {
         expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN
-      }
+      },
+      privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
     })
   }
   // ký access_token và refresh_token

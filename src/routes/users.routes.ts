@@ -2,16 +2,20 @@ import { Router } from 'express'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
-  registerValidator
+  registerValidator,
+  verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middlewares'
 import {
   emailVerifyTokenController,
+  forgotPasswordController,
   loginController,
   logoutController,
   registerController,
-  resendEmailVerifyController
+  resendEmailVerifyController,
+  verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
 import { register } from 'module'
 import { wrapAsync } from '~/utils/handlers'
@@ -69,6 +73,29 @@ header: {Authorization: Bearer <access_token>} //đăng nhập mới được re
 body: {}
 */
 usersRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
+
+/*
+des: khi người dùng quên mật khẩu, họ gửi email để xin mình tạo cho họ forgot_password_token
+path: /users/forgot-password
+method: POST
+body: {email: string}
+*/
+usersRouter.post('/forgot-password', forgotPasswordValidator, wrapAsync(forgotPasswordController))
+
+/*
+des: khi người dùng nhấp vaò link trong email để reset password
+họ sẽ gửi 1 req kèm forgot_password_token lên server
+server kiểm tra cái forgot_password_token này có hợp lệ hay không
+sau đó chuyển hướng họ tới trang đổi mật khẩu
+path: /users/verify-forgot-password
+method: POST
+body: {forgot_password_token: string}
+*/
+usersRouter.post(
+  '/verify-forgot-password',
+  verifyForgotPasswordTokenValidator,
+  wrapAsync(verifyForgotPasswordTokenController)
+)
 export default usersRouter
 
 // nếu là hàm async thì throw new Error sẽ lỗi nên ta phải dùng try catch để chụp lại err r next(err) | promise

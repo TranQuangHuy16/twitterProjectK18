@@ -53,6 +53,18 @@ class UsersService {
     })
   }
 
+  private signForgotPasswordToken(user_id: string) {
+    return signToken({
+      payload: {
+        user_id,
+        token_type: TokenType.ForgotPasswordToken
+      },
+      options: {
+        expiresIn: process.env.FORGOT_PASSWORD_TOKEN_EXPIRE_IN
+      },
+      privateKey: process.env.JWT_SECRET_FORGOT_PASSWORD_TOKEN as string
+    })
+  }
   // ký access_token và refresh_token
   private async signAccessAndRefreshToken(user_id: string) {
     return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
@@ -145,6 +157,23 @@ class UsersService {
     // giả lập gửi mail vì chưa có aws:V
     console.log(email_verify_token)
     return { message: USERS_MESSAGES.RESEND_EMAIL_VERIFY_SUCCESS }
+  }
+
+  async forgotPassword(user_id: string) {
+    // tạo ra forgot_password_token
+    const forgot_password_token = await this.signForgotPasswordToken(user_id)
+    // update lại user
+    await databaseService.users.updateOne({ _id: new ObjectId(user_id) }, [
+      {
+        $set: {
+          forgot_password_token,
+          updated_at: '$$NOW'
+        }
+      }
+    ])
+    // giả lập gửi mail vì chưa có aws:V
+    console.log(forgot_password_token)
+    return { message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD }
   }
 }
 

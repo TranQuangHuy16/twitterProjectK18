@@ -201,9 +201,7 @@ export const accessTokenValidator = validate(
     {
       Authorization: {
         trim: true,
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
-        },
+
         custom: {
           options: async (value, { req }) => {
             // value là Authorization
@@ -244,9 +242,7 @@ export const refreshTokenValidator = validate(
     {
       refresh_token: {
         trim: true,
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
-        },
+
         custom: {
           options: async (value, { req }) => {
             // value là refrest_token
@@ -265,6 +261,46 @@ export const refreshTokenValidator = validate(
                 })
               }
               ;(req as Request).decoded_refresh_token = docoded_refresh_token
+            } catch (err) {
+              if (err instanceof JsonWebTokenError) {
+                throw new ErrorWithStatus({
+                  message: capitalize((err as JsonWebTokenError).message),
+                  status: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+              throw err
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)
+
+export const emailVerifyTokenValidator = validate(
+  checkSchema(
+    {
+      email_verify_token: {
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            // kiểm tra người dùng có truyền lên email_verify_token hay không
+            if (!value) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_IS_REQUIRED,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            // verify email_verify_token để lấy decoded_email_verify_token
+            try {
+              const decoded_email_verify_token = await verifyToken({
+                token: value,
+                secretOrPublicKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string
+              })
+              // sau khi verify thành công ta được paylod: decoded_email_verify_token vào req
+              ;(req as Request).decoded_email_verify_token = decoded_email_verify_token
             } catch (err) {
               if (err instanceof JsonWebTokenError) {
                 throw new ErrorWithStatus({

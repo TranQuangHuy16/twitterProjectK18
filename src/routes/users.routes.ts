@@ -1,11 +1,17 @@
 import { Router } from 'express'
 import {
   accessTokenValidator,
+  emailVerifyTokenValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator
 } from '~/middlewares/users.middlewares'
-import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  emailVerifyTokenController,
+  loginController,
+  logoutController,
+  registerController
+} from '~/controllers/users.controllers'
 import { register } from 'module'
 import { wrapAsync } from '~/utils/handlers'
 const usersRouter = Router()
@@ -39,6 +45,19 @@ usersRouter.post('/register', registerValidator, wrapAsync(registerController))
   */
 usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController)) //ta sẽ thêm middleware sau
 
+/*
+des: verify email token
+khi người dùng đăng ký họ sẽ nhận được mail có link dạng
+http://localhost:3000/users/verify-email?token=<email_verify_token>
+nếu mà nhấp vào link sẽ tạo ra req gửi lên email_verify_token lên server
+server kiểm tra cái email_verify_token này có hợp lệ hay không
+thì từ cái decoded_email_verify_token lấy ra user_id
+và vào user_id đó để update email_verified thành '', verify = 1, update_at
+path: /users/verify-email
+method: POST
+body: {token: string}
+*/
+usersRouter.post('/verify-email', emailVerifyTokenValidator, wrapAsync(emailVerifyTokenController))
 export default usersRouter
 
 // nếu là hàm async thì throw new Error sẽ lỗi nên ta phải dùng try catch để chụp lại err r next(err) | promise

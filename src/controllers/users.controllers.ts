@@ -1,10 +1,12 @@
 import { Request, Response } from 'express'
 import {
+  GetProfileReqParams,
   LoginReqBody,
   LogoutReqBody,
   RegisterRequestBody,
   ResetPasswordReqBody,
   TokenPayload,
+  UpdateMeReqBody,
   VerifyEmailReqBody
 } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
@@ -23,7 +25,10 @@ export const loginController = async (req: Request<ParamsDictionary, any, LoginR
   const user = req.user as User
   const user_id = user._id as ObjectId
   // dùng cái user_id để tạo access_token và refresh_token
-  const result = await usersService.login(user_id.toString())
+  const result = await usersService.login({
+    user_id: user_id.toString(),
+    verify: user.verify
+  })
   // res access_token và refresh_token cho client
   res.json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,
@@ -123,9 +128,12 @@ export const resendEmailVerifyController = async (req: Request, res: Response) =
 
 export const forgotPasswordController = async (req: Request, res: Response) => {
   // lấy user_id từ user của req
-  const { _id } = req.user as User
+  const { _id, verify } = req.user as User
   // dùng _id tìm và cập nhật lại user thêm vào forgot_password_token
-  const result = await usersService.forgotPassword((_id as ObjectId).toString())
+  const result = await usersService.forgotPassword({
+    user_id: (_id as ObjectId).toString(),
+    verify
+  })
   return res.json({
     message: USERS_MESSAGES.FORGOT_PASSWORD_SUCCESS,
     result
@@ -157,6 +165,34 @@ export const getMeController = async (req: Request, res: Response) => {
   const user = await usersService.getMe(user_id)
   return res.json({
     message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
+  })
+}
+
+export const updateMeController = async (req: Request<ParamsDictionary, any, UpdateMeReqBody>, res: Response) => {
+  // muốn updae thông tin của user thì cần user_id và thông tin người ta muốn update
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const { body } = req
+  // giờ mình sẽ update usert thông qua user_id này với body được cho
+  const result = await usersService.updateMe(user_id, body)
+  return res.json({
+    message: USERS_MESSAGES.UPDATE_ME_SUCCESS,
+    result
+  })
+  // khi mới login xong cấp access_token verify vẫn là 0
+  // khi đã verify email rồi thì access_token đó vẫn còn verify là 0
+  // nên có 2 hướng giải quyết
+  // 1 là đăng nhập lại or đợi access_token hết hạn tạo ra cái mới thì access_token mới có verify là 1
+  // 2 là dùng socket io để bắn ngược req từ server về client yêu cầu client tạo ra refresh_token mới
+}
+
+export const getProfileController = async (req: Request<GetProfileReqParams>, res: Response) => {
+  // muốn lấy thông tin của user thì cần username
+  const { username } = req.params
+  // tiến hành vào databse tìm và lấy thông tin user
+  const user = await usersService.getProfile(username)
+  return res.json({
+    message: USERS_MESSAGES.GET_PROFILE_SUCCESS,
     result: user
   })
 }

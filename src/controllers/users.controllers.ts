@@ -3,6 +3,7 @@ import {
   LoginReqBody,
   LogoutReqBody,
   RegisterRequestBody,
+  ResetPasswordReqBody,
   TokenPayload,
   VerifyEmailReqBody
 } from '~/models/requests/User.requests'
@@ -15,6 +16,7 @@ import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { UserVerifyStatus } from '~/constants/enums'
+import { json } from 'stream/consumers'
 
 export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   // lấy user_id từ user của req
@@ -133,5 +135,28 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
 export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
   return res.json({
     message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  res: Response
+) => {
+  // muốn cập nhật mật khẩu mới cần user_id và password mới
+  const { user_id } = req.decoded_forgot_password_token as TokenPayload
+  const { password } = req.body
+  // cập nhật password mới cho user có user_id này
+  const result = await usersService.resetPassword({ user_id, password })
+  return res.json(result)
+}
+
+export const getMeController = async (req: Request, res: Response) => {
+  // muốn lấy thông tin của user thì cần user_id
+  const { user_id } = req.decoded_authorization as TokenPayload
+  // tiến hành vào databse tìm và lấy thông tin user
+  const user = await usersService.getMe(user_id)
+  return res.json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
   })
 }

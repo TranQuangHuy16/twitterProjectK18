@@ -12,6 +12,7 @@ import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
+import { REGEX_USERNAME } from '~/constants/regex'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/User.requests'
 import databaseService from '~/services/database.services'
@@ -120,6 +121,32 @@ const imageSchema: ParamSchema = {
       max: 400
     },
     errorMessage: USERS_MESSAGES.IMAGE_URL_LENGTH_MUST_BE_FROM_1_TO_400
+  }
+}
+
+const userIdSchema: ParamSchema = {
+  custom: {
+    options: async (value: string, { req }) => {
+      // check value có phải objectId hay không
+      if (!ObjectId.isValid(value)) {
+        throw new ErrorWithStatus({
+          message: USERS_MESSAGES.INVALID_USER_ID,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      // vào database tìm user đó xem có hay không?
+      const user = await databaseService.users.findOne({
+        _id: new ObjectId(value)
+      })
+      if (user === null) {
+        throw new ErrorWithStatus({
+          message: USERS_MESSAGES.USER_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      // nếu vượt qua hết thì return true
+      return true
+    }
   }
 }
 
@@ -518,16 +545,77 @@ export const updateMeValidator = validate(
           errorMessage: USERS_MESSAGES.USERNAME_MUST_BE_A_STRING ////messages.ts thêm USERNAME_MUST_BE_A_STRING: 'Username must be a string'
         },
         trim: true,
-        isLength: {
-          options: {
-            min: 1,
-            max: 50
-          },
-          errorMessage: USERS_MESSAGES.USERNAME_LENGTH_MUST_BE_LESS_THAN_50 //messages.ts thêm USERNAME_LENGTH_MUST_BE_LESS_THAN_50: 'Username length must be less than 50'
+        custom: {
+          options: async (value, { req }) => {
+            if (REGEX_USERNAME.test(value) === false) {
+              throw new Error(USERS_MESSAGES.USERNAME_MUST_BE_A_STRING)
+            }
+            // tìm user bằng cái username người dùng muốn cập nhật
+            const user = await databaseService.users.findOne({ username: value })
+            if (user) {
+              throw new Error(USERS_MESSAGES.USERNAME_ALREADY_EXISTS)
+            }
+            return true
+          }
         }
       },
       avatar: imageSchema,
       cover_photo: imageSchema
+    },
+    ['body']
+  )
+)
+
+export const followValidator = validate(
+  checkSchema(
+    {
+      followed_user_id: userIdSchema
+    },
+    ['body']
+  )
+)
+
+export const unfollowValidator = validate(
+  checkSchema(
+    {
+      user_id: userIdSchema
+    },
+    ['params']
+  )
+)
+
+// body: {old_password: string, new_password: string, confirm_new_password: string}
+export const changePasswordValidator = validate(
+  checkSchema(
+    {
+      old_password: {
+        ...passwordCSchema,
+        custom: {
+          options: async (value, { req }) => {
+            const { user_id } = req.decoded_authorization as TokenPayload
+            // tìm user trong database
+            const user = await databaseService.users.findOne({
+              _id: new ObjectId(user_id)
+            })
+            if (user === null) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.USER_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            const { password } = user
+            if (password !== hashPassword(value)) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.OLD_PASSWORD_NOT_MATCH,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            return true
+          }
+        }
+      },
+      password: passwordCSchema,
+      confirm_password: confrimPasswordSchema
     },
     ['body']
   )

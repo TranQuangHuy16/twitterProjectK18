@@ -1,18 +1,23 @@
 import { Router } from 'express'
 import {
   accessTokenValidator,
+  changePasswordValidator,
   emailVerifyTokenValidator,
+  followValidator,
   forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  unfollowValidator,
   updateMeValidator,
   verifiedUserValidator,
   verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middlewares'
 import {
+  changePasswordController,
   emailVerifyTokenController,
+  followController,
   forgotPasswordController,
   getMeController,
   getProfileController,
@@ -21,6 +26,7 @@ import {
   registerController,
   resendEmailVerifyController,
   resetPasswordController,
+  unfollowController,
   updateMeController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
@@ -155,6 +161,55 @@ không cần header vì, chưa đăng nhập cũng có thể xem
 */
 usersRouter.get('/:username', wrapAsync(getProfileController))
 //chưa có controller getProfileController, nên bây giờ ta làm
+
+/*
+des: Follow someone
+path: '/follow'
+method: post
+headers: {Authorization: Bearer <access_token>}
+body: {followed_user_id: string}
+*/
+usersRouter.post('/follow', accessTokenValidator, verifiedUserValidator, followValidator, wrapAsync(followController))
+//accessTokenValidator dùng dể kiểm tra xem ngta có đăng nhập hay chưa, và có đc user_id của người dùng từ req.decoded_authorization
+//verifiedUserValidator dùng để kiễm tra xem ngta đã verify email hay chưa, rồi thì mới cho follow người khác
+//trong req.body có followed_user_id  là mã của người mà ngta muốn follow
+//followValidator: kiểm tra followed_user_id truyền lên có đúng định dạng objectId hay không
+//  account đó có tồn tại hay không
+//followController: tiến hành thao tác tạo document vào collection followers
+/*
+user16.2013: 654caa54850189b0af4768de
+user1610.2020: 654caae46a2375cbf8e25ca8
+*/
+
+/*
+des: unfollow someone
+path: '/unfollow/:user_id'
+method: delete
+headers: {Authorization: Bearer <access_token>}
+*/
+usersRouter.delete(
+  '/unfollow/:user_id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  unfollowValidator,
+  wrapAsync(unfollowController)
+)
+
+// change password
+/*
+des: change password
+path: '/change-password'
+method: put
+headers: {Authorization: Bearer <access_token>}
+body: {old_password: string, new_password: string, confirm_new_password: string}
+*/
+usersRouter.put(
+  '/change-password',
+  accessTokenValidator,
+  verifiedUserValidator,
+  changePasswordValidator,
+  wrapAsync(changePasswordController)
+)
 export default usersRouter
 
 // nếu là hàm async thì throw new Error sẽ lỗi nên ta phải dùng try catch để chụp lại err r next(err) | promise

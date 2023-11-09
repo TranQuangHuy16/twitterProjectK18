@@ -1,11 +1,14 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import {
+  ChangePasswordReqBody,
+  FollowReqBody,
   GetProfileReqParams,
   LoginReqBody,
   LogoutReqBody,
   RegisterRequestBody,
   ResetPasswordReqBody,
   TokenPayload,
+  UnfollowParams,
   UpdateMeReqBody,
   VerifyEmailReqBody
 } from '~/models/requests/User.requests'
@@ -195,4 +198,36 @@ export const getProfileController = async (req: Request<GetProfileReqParams>, re
     message: USERS_MESSAGES.GET_PROFILE_SUCCESS,
     result: user
   })
+}
+
+export const followController = async (
+  req: Request<ParamsDictionary, any, FollowReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const { followed_user_id } = req.body // lấy followed_user_id từ req.body
+  const result = await usersService.follow(user_id, followed_user_id)
+  return res.json(result)
+}
+
+export const unfollowController = async (req: Request<UnfollowParams>, res: Response, next: NextFunction) => {
+  // lấy ra user_id người muốn thực hiện hành động unfollow
+  const { user_id } = req.decoded_authorization as TokenPayload
+  // lấy ra người mà mình muốn unfollow
+  const { user_id: followed_user_id } = req.params
+  // gọi hàm unfollow
+  const result = await usersService.unfollow(user_id, followed_user_id)
+  return res.json(result)
+}
+
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const { password } = req.body
+  const result = await usersService.changePassword(user_id, password)
+  return res.json(result)
 }

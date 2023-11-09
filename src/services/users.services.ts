@@ -11,6 +11,7 @@ import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { Follower } from '~/models/schemas/Followers.schema'
 config()
 
 class UsersService {
@@ -276,6 +277,68 @@ class UsersService {
       })
     }
     return user
+  }
+
+  async follow(user_id: string, followed_user_id: string) {
+    // kiểm tra XEM ĐA FOLLOW HAY CHƯA
+    const isFollowed = await databaseService.followers.findOne({
+      user_id: new ObjectId(user_id),
+      followed_user_id: new ObjectId(followed_user_id)
+    })
+    // nếu đã follow thì return message là đã follow
+    if (isFollowed != null) {
+      return {
+        message: USERS_MESSAGES.FOLLOWED
+      }
+    }
+    // CHƯA THÌ THÊM 1 DOCUMENT VÀO COLLECTION followers
+    await databaseService.followers.insertOne(
+      new Follower({
+        user_id: new ObjectId(user_id),
+        followed_user_id: new ObjectId(followed_user_id)
+      })
+    )
+    return {
+      message: USERS_MESSAGES.FOLLOWED_SUCCESS
+    }
+  }
+
+  async unfollow(user_id: string, followed_user_id: string) {
+    // kiểm tra xem mình đã follow chưa
+    const isFollowed = await databaseService.followers.findOne({
+      user_id: new ObjectId(user_id),
+      followed_user_id: new ObjectId(followed_user_id)
+    })
+
+    if (!isFollowed) {
+      return {
+        message: USERS_MESSAGES.ALREADY_UNFOLLOWED
+      }
+    }
+
+    await databaseService.followers.deleteOne({
+      user_id: new ObjectId(user_id),
+      followed_user_id: new ObjectId(followed_user_id)
+    })
+
+    return {
+      message: USERS_MESSAGES.UNFOLLOWED_SUCCESS
+    }
+  }
+
+  async changePassword(user_id: string, password: string) {
+    await databaseService.users.updateOne({ _id: new ObjectId(user_id) }, [
+      {
+        $set: {
+          password: hashPassword(password),
+          forgot_password_token: '',
+          updated_at: '$$NOW'
+        }
+      }
+    ])
+    return {
+      message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
+    }
   }
 }
 

@@ -23,6 +23,8 @@ import {
   getProfileController,
   loginController,
   logoutController,
+  oAuthController,
+  refreshTokenController,
   registerController,
   resendEmailVerifyController,
   resetPasswordController,
@@ -210,6 +212,16 @@ usersRouter.put(
   changePasswordValidator,
   wrapAsync(changePasswordController)
 )
+
+/*
+des: refresh token
+path: '/refresh-token'
+method: post
+body: {refresh_token: string}
+*/
+usersRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenController))
+
+usersRouter.get('/oauth/google', wrapAsync(oAuthController))
 export default usersRouter
 
 // nếu là hàm async thì throw new Error sẽ lỗi nên ta phải dùng try catch để chụp lại err r next(err) | promise

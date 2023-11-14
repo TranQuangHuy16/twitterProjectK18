@@ -8,6 +8,7 @@ import { config } from 'dotenv'
 import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR, UPLOAD_VIDEO_TEMP_DIR } from './constants/dir'
 import staticRouter from './routes/static.routes'
 import { MongoClient } from 'mongodb'
+import tweetsRouter from './routes/tweets.routes'
 config()
 
 const app = express()
@@ -16,6 +17,8 @@ const PORT = process.env.PORT || 4000
 initFolder()
 databaseService.connect().then(() => {
   databaseService.indexUsers()
+  databaseService.indexRefreshTokens()
+  databaseService.indexFollowers()
 })
 //localhost:3000/
 app.get('/', (req, res) => {
@@ -25,6 +28,7 @@ app.get('/', (req, res) => {
 app.use('/users', usersRouter)
 //localhost:3000/users/tweets
 app.use('/medias', mediasRouter)
+app.use('/tweets', tweetsRouter)
 // app.use('/static/video', express.static(UPLOAD_VIDEO_DIR))
 app.use('/static', staticRouter)
 
